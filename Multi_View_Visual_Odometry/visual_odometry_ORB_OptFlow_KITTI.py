@@ -180,7 +180,7 @@ class mono_VO_ORBFlow_KITTI:
             print('[INFO] 2nd image')
 
             query_img = cv.imread(self.dataset_path + self.images[self.dataset_current_idx])
-            
+
             prev_gray = cv.cvtColor(query_img, cv.COLOR_BGR2GRAY)
             self.image_buffer[1] = prev_gray
 
@@ -248,7 +248,7 @@ class mono_VO_ORBFlow_KITTI:
 
             ### Feature Retracking over all 3 images ###################################################################################
             #if len(self.img_features_buffer[2]) < (self.initial_common_match_num * self.retracking_ratio):
-            if len(self.img_features_buffer[2]) < 1000:
+            if len(self.img_features_buffer[2]) < 500:
                 print('[Re-Tracking] Not Enough Features between pprev and prev / Too many have been consumed')
 
                 ### pprev-prev ###
@@ -322,12 +322,12 @@ class mono_VO_ORBFlow_KITTI:
         Essential_Mat_pprev_prev, mask_pprev_prev = cv.findEssentialMat(np.int32(prev_match_keypoints_pts), 
                                                                         np.int32(pprev_match_keypoints_pts),
                                                                         cameraMatrix=self.intrinsic_CAM_Mat,
-                                                                        method=cv.RANSAC, prob=0.999, threshold=1.0)
+                                                                        method=cv.RANSAC, prob=0.99, threshold=1.0)
 
         Essential_Mat_prev_current, mask_prev_current = cv.findEssentialMat(np.int32(current_match_keypoints_pts), 
                                                                             np.int32(prev_match_keypoints_pts),
                                                                             cameraMatrix=self.intrinsic_CAM_Mat,
-                                                                            method=cv.RANSAC, prob=0.999, threshold=1.0)
+                                                                            method=cv.RANSAC, prob=0.99, threshold=1.0)
 
         retval, Rotation_Mat_pprev_prev, Translation_Mat_pprev_prev, r_mask_pprev_prev = cv.recoverPose(Essential_Mat_pprev_prev,
                                                                                                         np.int32(prev_match_keypoints_pts),
@@ -428,7 +428,7 @@ class mono_VO_ORBFlow_KITTI:
         # Absolute value of Z is compared to absolute value of Y and X. Absolute value is used to make this condition work under both foward and backward movements of the camera.
         if ( (abs(self.geometric_unit_changes['T_prev_current'][2]) > abs(self.geometric_unit_changes['T_prev_current'][0])) and
              (abs(self.geometric_unit_changes['T_prev_current'][2]) > abs(self.geometric_unit_changes['T_prev_current'][1])) ):
-            self.pose_T = self.prev_pose_T + T_relative_scale * self.prev_pose_R.dot(self.geometric_unit_changes['T_prev_current'])
+            self.pose_T = self.prev_pose_T + absolute_scale * self.prev_pose_R.dot(self.geometric_unit_changes['T_prev_current'])
             self.pose_R = self.geometric_unit_changes['R_prev_current'].dot(self.prev_pose_R)
 
             print('[INFO] Dominant Forward : Pose Estimation Results')
