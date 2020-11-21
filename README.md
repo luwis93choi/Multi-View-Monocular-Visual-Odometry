@@ -22,20 +22,21 @@ Monocular Visual Odometry Project using Conventional Multi-view Geometry with Op
 - For Python3 : **which python3** (Copy the path)
 
 4. Download librealsense & Move to librealsense directory
-- git clone https://github.com/IntelRealSense/librealsense.git
+- **git clone https://github.com/IntelRealSense/librealsense.git**
+- **cd librealsense**
 
 5. Prepare build
-- mkdir build
-- cd build
+- **mkdir build**
+- **cd build**
 
 6. Run top level CMake command with the following flags
-- cmake ../ -DBUILD_PYTHON_BINDINGS:bool=true -DBUILD_EXECUTABLE=[full path of which python/which python3]
+- **cmake ../ -DBUILD_PYTHON_BINDINGS:bool=true -DBUILD_EXECUTABLE=[full path of which python/which python3]**
 > -DBUILD_PYTHON_BINDINGS : Decide whether to build python wrapper <br>
 > -DBUILD_EXECUTABLE : Specify installation directory <br>
 
 7. Make & Install
-- make -j1
-- sudo make install
+- **make -j1**
+- **sudo make install**
 > make -j1 : Use one core to build the library
 > make -j4 : Use four core to build the library
 
@@ -59,4 +60,4 @@ pipeline.start(config)
 
 > For an unknown reason, pyrealsense2 is installed at /usr/local/lib/python3.6 for python3 and /usr/local/lib/python2.7 for python2.This does not change even if -DBUILD_EXECUTABLE is changed. <br><br>
 > As a result, it is recommend to append /usr/local/lib/python3.6 for python3 and /usr/local/lib/python2.7 for python2 as an easy solution. <br><br>
-> Updating PYTHONPATH environment variable is an alternative method for importing pyrealsense2. However, in Jetson Nano, this does not seem to work well <br>
+> Updating PYTHONPATH environment variable (export PYTHONPATH=$PYTHONPATH:/usr/local/lib) is an alternative method for importing pyrealsense2. However, in Jetson Nano, this does not seem to work well with this method. <br>
