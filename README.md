@@ -30,7 +30,7 @@ Monocular Visual Odometry Project using Conventional Multi-view Geometry with Op
 - **cd build**
 
 6. Run top level CMake command with the following flags
-- **cmake ../ -DBUILD_PYTHON_BINDINGS:bool=true -DBUILD_EXECUTABLE=[full path of which python/which python3]**
+- **cmake ../ -DBUILD_PYTHON_BINDINGS:bool=true -DPYTHON_EXECUTABLE=[full path of which python/which python3]**
 > -DBUILD_PYTHON_BINDINGS : Decide whether to build python wrapper <br>
 > -DBUILD_EXECUTABLE : Specify installation directory <br>
 
