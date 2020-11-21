@@ -39,7 +39,7 @@ Monocular Visual Odometry Project using Conventional Multi-view Geometry with Op
 > make -j1 : Use one core to build the library
 
 8. At python script, import pyrealsense2.pyrealsense2 as rs
-'''
+''' C
 import pyrealsense2.pyrealsense2 as rs
 
 pipe = rs.pipeline()
