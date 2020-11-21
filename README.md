@@ -38,9 +38,14 @@ Monocular Visual Odometry Project using Conventional Multi-view Geometry with Op
 - sudo make install
 > make -j1 : Use one core to build the library
 
-8. At python script, import pyrealsense2.pyrealsense2 as rs
+8. At python script, append **/usr/local/lib/python3.6 (Python 3.6)** or **/usr/local/lib/python2.7 (Python 2.7)** in sys.path and import pyrealsense2.pyrealsense2 as rs
 
 ```python
+import sys
+
+sys.path.insert(0, '/usr/local/lib/python3.6')
+print(sys.path)
+
 import pyrealsense2.pyrealsense2 as rs
 
 pipe = rs.pipeline()
@@ -50,3 +55,6 @@ config.enable_stream(rs.stream.color, 640, 480, r$
 
 pipeline.start(config)
 ```
+<br>
+> For an unknown reason, pyrealsense2 is installed at /usr/local/lib/python3.6 for python3 and /usr/local/lib/python2.7 for python2. This does not change even if -DBUILD_EXECUTABLE is changed. As a result, it is recommend to append /usr/local/lib/python3.6 for python3 and /usr/local/lib/python2.7 for python2 as an easy solution.
+> Updating PYTHONPATH environment variable is an alternative method for importing pyrealsense2. However, in Jetson Nano, this does not seem to work well
