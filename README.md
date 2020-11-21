@@ -59,6 +59,6 @@ config.enable_stream(rs.stream.color, 640, 480, r$
 pipeline.start(config)
 ```
 
-> For an unknown reason, pyrealsense2 is installed at /usr/local/lib/python3.6 for python3 and /usr/local/lib/python2.7 for python2.This does not change even if -DBUILD_EXECUTABLE is changed. <br><br>
+> For an unknown reason, pyrealsense2 is installed at /usr/local/lib/python3.6 for python3 and /usr/local/lib/python2.7 for python2. This does not change even if -DBUILD_EXECUTABLE is changed. <br><br>
 > As a result, it is recommend to append /usr/local/lib/python3.6 for python3 and /usr/local/lib/python2.7 for python2 as an easy solution. <br><br>
 > Updating PYTHONPATH environment variable (export PYTHONPATH=$PYTHONPATH:/usr/local/lib) is an alternative method for importing pyrealsense2. However, in Jetson Nano, this does not seem to work well with this method. <br>
