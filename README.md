@@ -4,11 +4,9 @@ Monocular Visual Odometry Project using Conventional Multi-view Geometry with Op
 -----------
 
 # pyrealsense Jetson Nano Setup
-```
-Reference <br>
-: Official Intel Realsense Python Wrapper (https://github.com/IntelRealSense/librealsense/tree/master/wrappers/python) <br>
-: Fix by import (https://github.com/IntelRealSense/librealsense/issues/7540#issuecomment-709433690) <br><br>
-```
+>Reference <br>
+>: Official Intel Realsense Python Wrapper (https://github.com/IntelRealSense/librealsense/tree/master/wrappers/python) <br>
+>: Fix by import (https://github.com/IntelRealSense/librealsense/issues/7540#issuecomment-709433690) <br><br>
 
 >Since Jetson Nano is ARM-based device, pyrealsense2 cannot be installed using pip. As a result, python wrapper of Intel Realsense SDK needs to be built from the source.
 
@@ -58,9 +56,6 @@ config.enable_stream(rs.stream.color, 640, 480, r$
 
 pipeline.start(config)
 ```
-<br>
 
-```
-For an unknown reason, pyrealsense2 is installed at /usr/local/lib/python3.6 for python3 and /usr/local/lib/python2.7 for python2. This does not change even if -DBUILD_EXECUTABLE is changed. As a result, it is recommend to append /usr/local/lib/python3.6 for python3 and /usr/local/lib/python2.7 for python2 as an easy solution. <br>
-Updating PYTHONPATH environment variable is an alternative method for importing pyrealsense2. However, in Jetson Nano, this does not seem to work well
-```
+>For an unknown reason, pyrealsense2 is installed at /usr/local/lib/python3.6 for python3 and /usr/local/lib/python2.7 for python2. This does not change even if -DBUILD_EXECUTABLE is changed. As a result, it is recommend to append /usr/local/lib/python3.6 for python3 and /usr/local/lib/python2.7 for python2 as an easy solution.
+>Updating PYTHONPATH environment variable is an alternative method for importing pyrealsense2. However, in Jetson Nano, this does not seem to work well
