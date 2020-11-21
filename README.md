@@ -40,7 +40,7 @@ Monocular Visual Odometry Project using Conventional Multi-view Geometry with Op
 
 8. At python script, import pyrealsense2.pyrealsense2 as rs
 
-'''python
+```python
 import pyrealsense2.pyrealsense2 as rs
 
 pipe = rs.pipeline()
@@ -49,4 +49,4 @@ config = rs.config()
 config.enable_stream(rs.stream.color, 640, 480, r$
 
 pipeline.start(config)
-'''
+```
