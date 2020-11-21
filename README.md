@@ -62,3 +62,23 @@ pipeline.start(config)
 > For an unknown reason, pyrealsense2 is installed at /usr/local/lib/python3.6 for python3 and /usr/local/lib/python2.7 for python2. This does not change even if -DBUILD_EXECUTABLE is changed. <br><br>
 > As a result, it is recommend to append /usr/local/lib/python3.6 for python3 and /usr/local/lib/python2.7 for python2 as an easy solution. <br><br>
 > Updating PYTHONPATH environment variable (export PYTHONPATH=$PYTHONPATH:/usr/local/lib) is an alternative method for importing pyrealsense2. However, in Jetson Nano, this does not seem to work well with this method. <br>
+
+-----------
+
+# pytorch & torchvision Jetson Nano Setup
+> Reference
+> : Installing PyTorch, torchvision, spaCy, torchtext on Jetson Nanon [ARM] (https://gist.github.com/heavyinfo/8d0ef5a3768c5d8d22e164863670330a)
+> : Jetson Zoo PyTorch (https://elinux.org/Jetson_Zoo#PyTorch_.28Caffe2.29)
+
+> Since Jetson Nano is ARM-based device, pytorch and torchvision cannot be installed using pip. As a result, pytorch and torchvision have to be built from the source.
+
+1. pytorch setup
+- Visit Jetson Zoo (https://elinux.org/Jetson_Zoo)
+- Select PyTorch that you want and download it
+- Follow the instruction and run PyTorch wheel using pip (**pip3 install torch-1.X.X-cp36-cp36m-linux_aarch64.whl**)
+
+2. torchvision setup
+- Install pre-requisites (**sudo apt-get install libjpeg-dev zlib1g-dev**)
+- Clone torchvision of the version you want (**git clone --branch v0.X.0 https://github.com/pytorch/vision torchvision**)
+- Move to torchvision directory
+- Run setup.py (**sudo python setup.py install**)
