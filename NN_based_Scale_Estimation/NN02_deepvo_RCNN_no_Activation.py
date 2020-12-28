@@ -8,12 +8,12 @@ from torch.nn.init import kaiming_normal_ # (Reference : https://github.com/ChiW
 
 import numpy as np
 
-class DeepVONet(nn.Module):
+class DeepVONet_without_Activation(nn.Module):
 
     # DeepVO NN Initialization
     # Overriding base class of neural network (nn.Module)
-    def __init__(self):
-        super(DeepVONet, self).__init__()
+    def __init__(self, lstm_layer=2, lstm_hidden_size=1000):
+        super(DeepVONet_without_Activation, self).__init__()
 
         self.use_cuda = False
 
@@ -47,8 +47,8 @@ class DeepVONet(nn.Module):
         # RNN Layer (Reference : https://github.com/thedavekwon/DeepVO)
         self.rnn = nn.LSTM(
             input_size = 6 * 20 * 1024,
-            hidden_size = 800,
-            num_layers = 2,
+            hidden_size = lstm_hidden_size,
+            num_layers = lstm_layer,
             batch_first = True
         )
 
@@ -56,7 +56,7 @@ class DeepVONet(nn.Module):
         self.rnn_drop = nn.Dropout(0.5)
 
         # Linear Regression between RNN output features (1x500) and Absolute Scale between t-1 and t (1x1) (Absolute Scale)
-        self.fc = nn.Linear(in_features=800, out_features=1)
+        self.fc = nn.Linear(in_features=lstm_hidden_size, out_features=1)
 
         # RNN Learnable Variable Initilization (Reference : https://github.com/ChiWeiHsiao/DeepVO-pytorch/blob/master/model.py)
         for m in self.modules():

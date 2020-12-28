@@ -8,47 +8,63 @@ from torch.nn.init import kaiming_normal_ # (Reference : https://github.com/ChiW
 
 import numpy as np
 
-class DeepVONet(nn.Module):
+class DeepVONet_with_Activation(nn.Module):
+
+    # Stages of Convolutional Layer
+    def conv_layer(self, layer_num, in_channel, out_channel, kernel_size, stride, padding, dropout_rate, use_batchNorm=True, use_Activation=True):
+
+        conv = nn.Sequential()
+        conv.add_module('conv'+layer_num, nn.Conv2d(in_channel, out_channel, kernel_size=kernel_size, stride=stride, padding=padding, bias=False))
+
+        if use_batchNorm:
+            conv.add_module('batchNorm'+layer_num, nn.BatchNorm2d(out_channel))
+
+        if use_Activation:
+            conv.add_module('LeakyReLU'+layer_num, nn.LeakyReLU(0.1))
+
+        conv.add_module('dropout'+layer_num, nn.Dropout(dropout_rate))
+
+        return conv
 
     # DeepVO NN Initialization
     # Overriding base class of neural network (nn.Module)
-    def __init__(self):
-        super(DeepVONet, self).__init__()
+    def __init__(self, lstm_layer=2, lstm_hidden_size=1000):
+        super(DeepVONet_with_Activation, self).__init__()
 
         self.use_cuda = False
 
         # CNN Layer 1
-        self.conv1 = nn.Conv2d(6, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3))
+        self.conv1 = self.conv_layer('1', 6, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), dropout_rate=0.5, use_batchNorm=True, use_Activation=True)
 
         # CNN Layer 2
-        self.conv2 = nn.Conv2d(64, 128, kernel_size=(5, 5), stride=(2, 2), padding=(2, 2))
+        self.conv2 = self.conv_layer('2', 64, 128, kernel_size=(5, 5), stride=(2, 2), padding=(2, 2), dropout_rate=0.5, use_batchNorm=True, use_Activation=True)
 
         # CNN Layer 3
-        self.conv3 = nn.Conv2d(128, 256, kernel_size=(5, 5), stride=(2, 2), padding=(2, 2))
+        self.conv3 = self.conv_layer('3', 128, 256, kernel_size=(5, 5), stride=(2, 2), padding=(2, 2), dropout_rate=0.5, use_batchNorm=True, use_Activation=True)
 
         # CNN Layer 3_1
-        self.conv3_1 = nn.Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+        self.conv3_1 = self.conv_layer('3_1', 256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), dropout_rate=0.5, use_batchNorm=True, use_Activation=True)
 
         # CNN Layer 4
-        self.conv4 = nn.Conv2d(256, 512, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+        self.conv4 = self.conv_layer('4', 256, 512, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), dropout_rate=0.5, use_batchNorm=True, use_Activation=True)
 
         # CNN Layer 4_1
-        self.conv4_1 = nn.Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+        self.conv4_1 = self.conv_layer('4_1', 512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), dropout_rate=0.5, use_batchNorm=True, use_Activation=True)
 
         # CNN Layer 5
-        self.conv5 = nn.Conv2d(512, 512, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+        self.conv5 = self.conv_layer('5', 512, 512, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), dropout_rate=0.5, use_batchNorm=True, use_Activation=True)
 
         # CNN Layer 5_1
-        self.conv5_1 = nn.Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+        self.conv5_1 = self.conv_layer('5_1', 512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), dropout_rate=0.5, use_batchNorm=True, use_Activation=True)
 
         # CNN Layer 6
-        self.conv6 = nn.Conv2d(512, 1024, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+        self.conv6 = self.conv_layer('6', 512, 1024, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), dropout_rate=0.5, use_batchNorm=True, use_Activation=False)
 
         # RNN Layer (Reference : https://github.com/thedavekwon/DeepVO)
         self.rnn = nn.LSTM(
             input_size = 6 * 20 * 1024,
-            hidden_size = 800,
-            num_layers = 2,
+            hidden_size = lstm_hidden_size,
+            num_layers = lstm_layer,
             batch_first = True
         )
 
@@ -56,7 +72,7 @@ class DeepVONet(nn.Module):
         self.rnn_drop = nn.Dropout(0.5)
 
         # Linear Regression between RNN output features (1x500) and Absolute Scale between t-1 and t (1x1) (Absolute Scale)
-        self.fc = nn.Linear(in_features=800, out_features=1)
+        self.fc = nn.Linear(in_features=lstm_hidden_size, out_features=1)
 
         # RNN Learnable Variable Initilization (Reference : https://github.com/ChiWeiHsiao/DeepVO-pytorch/blob/master/model.py)
         for m in self.modules():

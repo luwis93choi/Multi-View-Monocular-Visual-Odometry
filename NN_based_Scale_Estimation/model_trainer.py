@@ -1,4 +1,3 @@
-from deepvoNet import DeepVONet
 from dataloader import voDataLoader
 
 from notifier import notifier_Outlook
@@ -15,6 +14,8 @@ import time
 import numpy as np
 from matplotlib import pyplot as plt
 
+import sys
+
 class trainer():
 
     def __init__(self, NN_model=None,
@@ -25,7 +26,7 @@ class trainer():
                        learning_rate=0.001,
                        train_epoch=1, train_sequence=[], train_batch=1,
                        valid_sequence=[],
-                       plot_batch=False, plot_epoch=True,
+                       plot_epoch=True,
                        sender_email='', sender_email_pw='', receiver_email=''):
 
         self.use_cuda = use_cuda
@@ -45,7 +46,6 @@ class trainer():
         self.valid_sequence = valid_sequence
         self.valid_batch = train_batch
 
-        self.plot_batch = plot_batch
         self.plot_epoch = plot_epoch
 
         self.sender_email = sender_email
@@ -63,21 +63,16 @@ class trainer():
 
         if NN_model == None:
 
-            self.deepvo_model = DeepVONet()
-            self.deepvo_model.to(self.PROCESSOR)
+            sys.exit('No NN model is specified')
 
         else:
 
-            self.deepvo_model = NN_model
-            self.deepvo_model.to(self.PROCESSOR)
+            self.NN_model = NN_model
+            self.NN_model.to(self.PROCESSOR)
             self.model_path = './'
 
-        if 'cuda' in str(self.PROCESSOR):
-            self.deepvo_model.use_cuda = True
-            #self.deepvo_model.reset_hidden_states(size=1, zero=True, cuda_num=self.cuda_num)
-
-        self.deepvo_model.train()
-        self.deepvo_model.training = True
+        self.NN_model.train()
+        self.NN_model.training = True
 
         self.train_loader = torch.utils.data.DataLoader(voDataLoader(img_dataset_path=self.img_dataset_path,
                                                                      pose_dataset_path=self.pose_dataset_path,
@@ -86,42 +81,13 @@ class trainer():
                                                                      batch_size=self.train_batch, shuffle=False, drop_last=True)
 
         self.criterion = torch.nn.L1Loss()
-        #self.optimizer = optim.SGD(self.deepvo_model.parameters(), lr=self.learning_rate)
-        self.optimizer = optim.Adagrad(self.deepvo_model.parameters(), lr=self.learning_rate)
 
-        summary(self.deepvo_model, Variable(torch.zeros((1, 6, 384, 1280)).to(self.PROCESSOR)))
+        self.optimizer = optim.Adagrad(self.NN_model.parameters(), lr=self.learning_rate)
+
+        summary(self.NN_model, Variable(torch.zeros((1, 6, 384, 1280)).to(self.PROCESSOR)))
 
         # Prepare Email Notifier
         self.notifier = notifier_Outlook(sender_email=self.sender_email, sender_email_pw=self.sender_pw)
-
-        # Prepare batch error graph
-        if self.plot_batch == True:
-            
-            self.train_plot_color = plt.cm.get_cmap('rainbow', len(train_sequence))
-            self.train_plot_x = 0
-
-            ### Plotting graph setup with broken y-axis ######################################
-            fig, (self.ax1, self.ax2) = plt.subplots(2, 1, sharex=True, figsize=(20, 8))
-            self.ax1.set_ylim(2, 30)
-            self.ax2.set_ylim(0, 1.5)
-
-            self.ax1.spines['bottom'].set_visible(False)
-            self.ax2.spines['top'].set_visible(False)
-
-            self.ax1.xaxis.tick_top()
-            self.ax1.tick_params(labeltop=False)
-            self.ax2.xaxis.tick_bottom()
-
-            d = .015    # how big to make the diagonal lines in axes coordinates
-                        # arguments to pass to plot, just so we don't keep repeating them
-            kwargs = dict(transform=self.ax1.transAxes, color='k', clip_on=False)
-            self.ax1.plot((-d, +d), (-d, +d), **kwargs)        # top-left diagonal
-            self.ax1.plot((1 - d, 1 + d), (-d, +d), **kwargs)  # top-right diagonal
-
-            kwargs.update(transform=self.ax2.transAxes)  # switch to the bottom axes
-            self.ax2.plot((-d, +d), (1 - d, 1 + d), **kwargs)  # bottom-left diagonal
-            self.ax2.plot((1 - d, 1 + d), (1 - d, 1 + d), **kwargs)  # bottom-right diagonal
-            ################################################################################
 
     def train(self):
 
@@ -147,7 +113,7 @@ class trainer():
 
                 self.optimizer.zero_grad()
                 
-                estimated_scale = self.deepvo_model(prev_current_img)
+                estimated_scale = self.NN_model(prev_current_img)
 
                 loss = self.criterion(estimated_scale[0][0], prev_current_absoluteScale.float())
                 
@@ -162,17 +128,6 @@ class trainer():
 
                 print('[EPOCH {}] Batch : {} / Loss : {}'.format(epoch, batch_idx, float(loss.item()))) # Use itme() in order to conserve GPU usage for printing loss
                     
-                # Plotting batch error graph
-                if self.plot_batch == True:
-                    self.ax1.plot(self.train_plot_x, loss.item(), c=self.train_plot_color(self.train_loader.dataset.sequence_idx), marker='o')
-                    self.ax2.plot(self.train_plot_x, loss.item(), c=self.train_plot_color(self.train_loader.dataset.sequence_idx), marker='o')
-
-                    self.ax1.set_title('DeepVO Training with KITTI [MSE Loss at each batch]\nTraining Sequence ' + str(train_sequence))
-                    self.ax2.set_xlabel('Training Length')
-                    self.ax2.set_ylabel('MSELoss')
-                    
-                    self.train_plot_x += 1
-
                 loss_sum += float(loss.item())  # Use itme() in order to conserve GPU usage for printing loss
                                                 # If not casted as float, this will accumulate tensor instead of single float value
 
@@ -185,25 +140,21 @@ class trainer():
                                title='[Deep Scale : Epoch {} / {} Complete]'.format(epoch+1, self.train_epoch),
                                contents=str(loss_sum / len(self.train_loader)) + '\n' + 'Time taken : {} sec'.format(after_epoch-before_epoch))
 
-            # Save batch error graph
-            if self.plot_batch == True:
-                plt.savefig('./Scale Estimation Training Results ' + str(datetime.datetime.now()) + '.png')
-
             print('[Epoch {} Complete] Loader Reset'.format(epoch))
             self.train_loader.dataset.reset_loader()
            
-            torch.save(self.deepvo_model, './DeepVO_Scale_Estimation_' + start_time + '.pth')
+            torch.save(self.NN_model, './DeepVO_Scale_Estimation_' + start_time + '.pth')
 
-        # Plotting average loss on each epoch
-        if self.plot_epoch == True:
-            plt.clf()
-            plt.figure(figsize=(20, 8))
-            plt.plot(range(self.train_epoch), training_loss, 'bo-')
-            plt.title('DeepVO Scale Estimation Training with KITTI [Average MSE Loss]\nTraining Sequence ' + str(self.train_sequence))
-            plt.xlabel('Training Length')
-            plt.ylabel('L1 Loss')
-            plt.savefig('./Training Results ' + str(datetime.datetime.now()) + '.png')
+            # Plotting average loss on each epoch
+            if self.plot_epoch == True:
+                plt.clf()
+                plt.figure(figsize=(20, 8))
+                plt.plot(range(len(training_loss)), training_loss, 'bo-')
+                plt.title('DeepVO Scale Estimation Training with KITTI [Average MSE Loss]\nTraining Sequence ' + str(self.train_sequence))
+                plt.xlabel('Training Length')
+                plt.ylabel('L1 Loss')
+                plt.savefig('./Training Results ' + start_time + '.png')
 
 
-        return self.deepvo_model, training_loss
+        return self.NN_model, training_loss
 

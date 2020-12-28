@@ -1,4 +1,3 @@
-from deepvoNet import DeepVONet
 from dataloader import voDataLoader
 
 from notifier import notifier_Outlook
@@ -24,7 +23,7 @@ class tester():
                        loader_preprocess_param=transforms.Compose([]), 
                        img_dataset_path='', pose_dataset_path='',
                        test_epoch=1, test_sequence=[], test_batch=1,
-                       plot_batch=False, plot_epoch=True,
+                       plot_epoch=True,
                        sender_email='', sender_email_pw='', receiver_email=''):
 
         self.NN_model = NN_model
@@ -39,21 +38,30 @@ class tester():
         self.test_sequence = test_sequence
         self.test_batch = test_batch
 
-        self.plot_batch = plot_batch
         self.plot_epoch = plot_epoch
 
         self.sender_email = sender_email
         self.sender_pw = sender_email_pw
         self.receiver_email = receiver_email
 
-        if use_cuda == True:        
+        if (use_cuda == True) and (cuda_num != ''):        
             # Load main processing unit for neural network
             self.PROCESSOR = torch.device('cuda:'+self.cuda_num if torch.cuda.is_available() else 'cpu')
 
-        self.NN_model.to(self.PROCESSOR)
+        else:
+            self.PROCESSOR = torch.device('cpu')
 
-        if 'cuda' in str(self.PROCESSOR):
-            self.NN_model.use_cuda = True
+        print(str(self.PROCESSOR))
+
+        if NN_model == None:
+
+            sys.exit('No NN model is specified')
+
+        else:
+
+            self.NN_model = NN_model
+            self.NN_model.to(self.PROCESSOR)
+            self.model_path = './'
 
         self.NN_model.eval()
         self.NN_model.evaluation = True
@@ -73,6 +81,8 @@ class tester():
 
     def run_test(self):
 
+        start_time = str(datetime.datetime.now())
+
         estimated_x = 0.0
         estimated_y = 0.0
         estimated_z = 0.0
@@ -91,63 +101,57 @@ class tester():
 
         for epoch in range(self.test_epoch):
 
-            print('[EPOCH] : {}'.format(epoch))
+            with torch.no_grad():
 
-            loss_sum = 0.0
+                print('[EPOCH] : {}'.format(epoch))
 
-            before_epoch = time.time()
+                loss_sum = 0.0
 
-            for batch_idx, (prev_current_img, prev_current_absoluteScale) in enumerate(self.test_loader):
+                before_epoch = time.time()
 
-                if self.use_cuda == True:
-                    prev_current_img = Variable(prev_current_img.to(self.PROCESSOR))
-                    prev_current_absoluteScale = Variable(prev_current_absoluteScale.to(self.PROCESSOR))
+                for batch_idx, (prev_current_img, prev_current_absoluteScale) in enumerate(self.test_loader):
 
-                    estimated_scale = Variable(torch.zeros(prev_current_absoluteScale.shape))
+                    if self.use_cuda == True:
+                        prev_current_img = Variable(prev_current_img.to(self.PROCESSOR))
+                        prev_current_absoluteScale = Variable(prev_current_absoluteScale.to(self.PROCESSOR))
 
-                estimated_scale = self.NN_model(prev_current_img)
+                        estimated_scale = Variable(torch.zeros(prev_current_absoluteScale.shape))
 
-                loss = self.criterion(estimated_scale[0][0], prev_current_absoluteScale.float())
+                    estimated_scale = self.NN_model(prev_current_img)
 
-                # Tensors (ex : loss, input data) have to be loaded on GPU and comsume GPU memory for training
-                # In order to conserve GPU memory usage, tensors for non-training related functions (ex : printing loss) have to be converted back from tensor
-                # As a result, for non-training related functions (ex : printing loss), use itme() or float(tensor.item()) API in order to utilize values stored in tensor
-                # Reference : https://pytorch.org/docs/stable/notes/faq.html (My model reports “cuda runtime error(2): out of memory”)
-                #           : https://stackoverflow.com/questions/61509872/resuming-pytorch-model-training-raises-error-cuda-out-of-memory
+                    loss = self.criterion(estimated_scale[0][0], prev_current_absoluteScale.float())
 
-                print('[EPOCH {}] Batch : {} / Loss : {}'.format(epoch, batch_idx, float(loss.item()))) # Use itme() in order to conserve GPU usage for printing loss
+                    # Tensors (ex : loss, input data) have to be loaded on GPU and comsume GPU memory for training
+                    # In order to conserve GPU memory usage, tensors for non-training related functions (ex : printing loss) have to be converted back from tensor
+                    # As a result, for non-training related functions (ex : printing loss), use itme() or float(tensor.item()) API in order to utilize values stored in tensor
+                    # Reference : https://pytorch.org/docs/stable/notes/faq.html (My model reports “cuda runtime error(2): out of memory”)
+                    #           : https://stackoverflow.com/questions/61509872/resuming-pytorch-model-training-raises-error-cuda-out-of-memory
 
-                predicted_scale = estimated_scale[0].data.cpu().numpy()
-                
-                print('[Predicted Absolute Scale] : {}'.format(predicted_scale))
+                    print('[EPOCH {}] Batch : {} / Loss : {}'.format(epoch, batch_idx, float(loss.item()))) # Use itme() in order to conserve GPU usage for printing loss
 
-                plt.plot(epoch * len(self.test_loader) + batch_idx, predicted_scale, 'bo')
-                plt.pause(0.001)
-                plt.show(block=False)
+                    loss_sum += float(loss.item())  # Use itme() in order to conserve GPU usage for printing loss
+                                                    # If not casted as float, this will accumulate tensor instead of single float value
 
-                loss_sum += float(loss.item())  # Use itme() in order to conserve GPU usage for printing loss
-                                                # If not casted as float, this will accumulate tensor instead of single float value
+                after_epoch = time.time()
 
-            after_epoch = time.time()
+                test_loss.append(loss_sum / len(self.test_loader))
 
-            test_loss.append(loss_sum / len(self.test_loader))
+                # Send the result of each epoch
+                self.notifier.send(receiver_email=self.receiver_email, 
+                                title='[Deep Scale : Epoch {} / {} Complete]'.format(epoch+1, self.test_epoch),
+                                contents=str(loss_sum / len(self.test_loader)) + '\n' + 'Time taken : {} sec'.format(after_epoch-before_epoch))
 
-            # Send the result of each epoch
-            self.notifier.send(receiver_email=self.receiver_email, 
-                               title='[Deep Scale : Epoch {} / {} Complete]'.format(epoch+1, self.test_epoch),
-                               contents=str(loss_sum / len(self.test_loader)) + '\n' + 'Time taken : {} sec'.format(after_epoch-before_epoch))
+                print('[Epoch {} Complete] Loader Reset'.format(epoch))
+                self.test_loader.dataset.reset_loader()
 
-            print('[Epoch {} Complete] Loader Reset'.format(epoch))
-            self.test_loader.dataset.reset_loader()
-
-        # Plotting average loss on each epoch
-        if self.plot_epoch == True:
-            plt.clf()
-            plt.figure(figsize=(20, 8))
-            plt.plot(range(self.test_epoch), test_loss, 'bo-')
-            plt.title('DeepVO Scale Estimation Test with KITTI [Average MSE Loss]\nTest Sequence ' + str(self.test_sequence))
-            plt.xlabel('Test Length')
-            plt.ylabel('L1 Loss')
-            plt.savefig(self.model_path + 'Test Results ' + str(datetime.datetime.now()) + '.png')
+                # Plotting average loss on each epoch
+                if self.plot_epoch == True:
+                    plt.clf()
+                    plt.figure(figsize=(20, 8))
+                    plt.plot(range(len(test_loss)), test_loss, 'bo-')
+                    plt.title('DeepVO Scale Estimation Test with KITTI [Average MSE Loss]\nTest Sequence ' + str(self.test_sequence))
+                    plt.xlabel('Test Length')
+                    plt.ylabel('L1 Loss')
+                    plt.savefig(self.model_path + 'Test Results ' + start_time + '.png')
 
         return test_loss
