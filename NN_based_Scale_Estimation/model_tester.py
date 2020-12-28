@@ -62,7 +62,7 @@ class tester():
                                                                     pose_dataset_path=self.pose_dataset_path,
                                                                     transform=loader_preprocess_param,
                                                                     sequence=test_sequence),
-                                                                    batch_size=self.test_batch, shuffle=True, drop_last=True)
+                                                                    batch_size=self.test_batch, shuffle=False, drop_last=True)
 
         self.criterion = torch.nn.L1Loss()
         
@@ -134,7 +134,7 @@ class tester():
 
             # Send the result of each epoch
             self.notifier.send(receiver_email=self.receiver_email, 
-                               title='[Epoch {} / {} Complete]'.format(epoch+1, self.test_epoch),
+                               title='[Deep Scale : Epoch {} / {} Complete]'.format(epoch+1, self.test_epoch),
                                contents=str(loss_sum / len(self.test_loader)) + '\n' + 'Time taken : {} sec'.format(after_epoch-before_epoch))
 
             print('[Epoch {} Complete] Loader Reset'.format(epoch))

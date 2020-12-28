@@ -26,11 +26,20 @@ class DeepVONet(nn.Module):
         # CNN Layer 3
         self.conv3 = nn.Conv2d(128, 256, kernel_size=(5, 5), stride=(2, 2), padding=(2, 2))
 
+        # CNN Layer 3_1
+        self.conv3_1 = nn.Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+
         # CNN Layer 4
         self.conv4 = nn.Conv2d(256, 512, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
 
+        # CNN Layer 4_1
+        self.conv4_1 = nn.Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+
         # CNN Layer 5
         self.conv5 = nn.Conv2d(512, 512, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+
+        # CNN Layer 5_1
+        self.conv5_1 = nn.Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
 
         # CNN Layer 6
         self.conv6 = nn.Conv2d(512, 1024, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
@@ -38,8 +47,8 @@ class DeepVONet(nn.Module):
         # RNN Layer (Reference : https://github.com/thedavekwon/DeepVO)
         self.rnn = nn.LSTM(
             input_size = 6 * 20 * 1024,
-            hidden_size = 500,
-            num_layers = 1,
+            hidden_size = 800,
+            num_layers = 2,
             batch_first = True
         )
 
@@ -47,7 +56,7 @@ class DeepVONet(nn.Module):
         self.rnn_drop = nn.Dropout(0.5)
 
         # Linear Regression between RNN output features (1x500) and Absolute Scale between t-1 and t (1x1) (Absolute Scale)
-        self.fc = nn.Linear(in_features=500, out_features=1)
+        self.fc = nn.Linear(in_features=800, out_features=1)
 
         # RNN Learnable Variable Initilization (Reference : https://github.com/ChiWeiHsiao/DeepVO-pytorch/blob/master/model.py)
         for m in self.modules():
@@ -68,7 +77,6 @@ class DeepVONet(nn.Module):
                 start, end = n//4, n//2
                 m.bias_hh_l0.data[start:end].fill_(1.)
 
-                '''
                 # RNN Layer 2 Init
                 kaiming_normal_(m.weight_ih_l1)
                 kaiming_normal_(m.weight_hh_l1)
@@ -77,7 +85,6 @@ class DeepVONet(nn.Module):
                 n = m.bias_hh_l1.size(0)
                 start, end = n // 4, n // 2
                 m.bias_hh_l1.data[start:end].fill_(1.)
-                '''
 
             elif isinstance(m, nn.BatchNorm2d):
                 m.weight.data.fill_(1)
@@ -95,20 +102,29 @@ class DeepVONet(nn.Module):
         # Forward pass through CNN Layer 3
         x = self.conv3(x)
 
+        # Forward pass through CNN Layer 3_1
+        x = self.conv3_1(x)
+
         # Forward pass through CNN Layer 4
         x = self.conv4(x)
 
+        # Forward pass through CNN Layer 4_1
+        x = self.conv4_1(x)
+
         # Forward pass through CNN Layer 5
         x = self.conv5(x)
+
+        # Forward pass through CNN Layer 5_1
+        x = self.conv5_1(x)
 
         # Foward pass through CNN Layer 6
         x = self.conv6(x)
 
         # Reshpae/Flatten the output of CNN in order to use it as the input of RNN
-        x = x.view(x.size(0), x.size(0), 6 * 20 * 1024)     # Input Shape : [Length of recurrent sequence, Size(0), Size(1)]
+        x = x.view(x.size(0), x.size(0), -1)     # Input Shape : [Length of recurrent sequence, Size(0), Size(1)]
 
         # RNN Layer Forward Pass
-        x, hidden = self.rnn(x)
+        x, _ = self.rnn(x)
 
         # RNN Dropout
         x = self.rnn_drop(x)

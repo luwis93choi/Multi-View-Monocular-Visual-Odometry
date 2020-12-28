@@ -48,8 +48,8 @@ if cuda_num is None:
 epoch = args['epoch']
 batch_size = args['batch_size']
 learning_rate = args['learning_rate']
-#train_sequence = ['00', '02', '08', '09']
-train_sequence = ['01']
+train_sequence = ['00', '01', '02', '05', '08', '09']
+#train_sequence = ['01']
 #train_sequence=['00', '01', '02', '03', '04', '05', '06', '07', '08', '09', '10']
 test_sequence = ['00']
 

@@ -83,7 +83,7 @@ class trainer():
                                                                      pose_dataset_path=self.pose_dataset_path,
                                                                      transform=loader_preprocess_param,
                                                                      sequence=train_sequence),
-                                                                     batch_size=self.train_batch, shuffle=True, drop_last=True)
+                                                                     batch_size=self.train_batch, shuffle=False, drop_last=True)
 
         self.criterion = torch.nn.L1Loss()
         #self.optimizer = optim.SGD(self.deepvo_model.parameters(), lr=self.learning_rate)
@@ -182,7 +182,7 @@ class trainer():
 
             # Send the result of each epoch
             self.notifier.send(receiver_email=self.receiver_email, 
-                               title='[Scale Estimation][Epoch {} / {} Complete]'.format(epoch+1, self.train_epoch),
+                               title='[Deep Scale : Epoch {} / {} Complete]'.format(epoch+1, self.train_epoch),
                                contents=str(loss_sum / len(self.train_loader)) + '\n' + 'Time taken : {} sec'.format(after_epoch-before_epoch))
 
             # Save batch error graph
